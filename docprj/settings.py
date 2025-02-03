@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
     # Internal apps
     'userauth',
+    'documents',
 ]
 
 MIDDLEWARE = [
@@ -135,3 +136,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'userauth.User'
+LOGIN_REDIRECT_URL = 'index'
+LOG_OUT_REDIRECT_URL = '/login/'
