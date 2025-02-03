@@ -12,5 +12,13 @@
         {% csrf_token %}
         <button>Logout</button>
     </form>
+
+        {% for document in object_list %}
+        <div>
+            <a href="{% url "doc-edit" document.uuid %}">{{document.title}}</a>  &nbsp &nbsp  &nbsp&nbsp <a href="{% url "doc-delete" document.uuid %}"><button>delete</button></a>
+ 
+        </div>
+
+        {% endfor %}
 </body>
-</html>
+</html> 
