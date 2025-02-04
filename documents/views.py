@@ -3,7 +3,7 @@ from .models import Document
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
-
+from .forms import DocumentForm
 
 class DocListView(LoginRequiredMixin, ListView):
     model = Document
@@ -14,8 +14,7 @@ class DocListView(LoginRequiredMixin, ListView):
 class DocCreateView(LoginRequiredMixin, CreateView):
     model = Document
     template_name = 'documents/document_create.html'
-    login_url = 'login'
-
+    login_url = 'login'    
     fields = ['title']
 
     def get_success_url(self):
@@ -41,8 +40,8 @@ class DocUpdateView(LoginRequiredMixin, UpdateView):
     model = Document
     template_name = 'documents/document_update.html'
     login_url = 'login'
+    form_class = DocumentForm  #use a ck editor form
 
-    fields = ['title', 'content']
     # Override lookup field to use UUID instead of default 'pk'
     lookup_field = 'uuid'
 
