@@ -31,6 +31,41 @@
     
 
     <script>
+        const doc_id = '{{document.uuid}}'
+        console.log(doc_id)
+        const docSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/doc/edit/'
+            + doc_id + '/'
+        );
+
+        let isUpdatingFromSocket = false; // Flag to prevent infinite loop
+
+        // Handle incoming WebSocket messages
+        docSocket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+
+            if (data.changes) {
+                console.log("🔄 Receiving real-time update:", data.changes);
+
+                // Prevent infinite loop by temporarily disabling event trigger
+                isUpdatingFromSocket = true;
+
+                if (editorInstance.getData() !== data.changes) {
+                    editorInstance.setData(data.changes);
+                }
+
+                setTimeout(() => {
+                    isUpdatingFromSocket = false;
+                }, 100); // Short delay to prevent immediate loop
+            }
+        };
+
+        docSocket.onclose = function(e) {
+            console.error('Document socket closed unexpectedly');
+        };
+
         document.addEventListener("DOMContentLoaded", function () {
             ClassicEditor
                 .create(document.querySelector('#editor'), {
@@ -110,11 +145,18 @@
                 })
                 .then(editor => {
                     console.log("✅ CKEditor 5 Initialized");
-        
-                    // Real-time update logging
+                    editorInstance = editor;  
+            
+                    // Send changes only when user manually types
                     editor.model.document.on('change:data', () => {
-                        let editorData = editor.getData();
-                        console.log("✍ CKEditor Content Updated:", editorData);
+                        if (!isUpdatingFromSocket) {
+                            let editorData = editor.getData();
+                            console.log("✍ Sending real-time changes:", editorData);
+            
+                            docSocket.send(JSON.stringify({
+                                'changes': editorData
+                            }));
+                        }
                     });
                 })
                 .catch(error => {
