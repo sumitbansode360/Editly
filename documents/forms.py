@@ -12,8 +12,11 @@ class DocumentForm(forms.ModelForm):
       class Meta:
           model = Document
           fields = ("title", "text")
-          widgets = {
-              "text": CKEditor5Widget(
-                  attrs={"class": "django_ckeditor_5"}, config_name="extends"
-              )
-          }
+          text = CKEditor5Widget(attrs={"class": "django_ckeditor_5"}, config_name="extends")
+
+        #   widgets = {
+        #       "text": CKEditor5Widget(
+        #           attrs={"class": "django_ckeditor_5", "id": 'ck-content'}, config_name="extends"
+        #       )
+        #   }
+
