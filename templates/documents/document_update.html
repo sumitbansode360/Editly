@@ -12,33 +12,56 @@
     {% endblock style %}
         
     {% block main %}
-        <div class="alert"></div>
-        <div class="container py-5">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h3 class="card-title text-primary mb-4">Edit Document</h3>
-                    
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-        
-                        <div class="mb-3">
-                            <label for="{{ form.title.id_for_label }}" class="form-label">Document Title</label>
-                            {{ form.title|add_class:"form-control" }}
-                        </div>
-        
-                        <div class="mb-3">
-                            <label for="editor" class="form-label">Content</label>
-                            <textarea name="{{ form.text.name }}" id="editor">
-                                {{ form.text.value|default:"" }}
-                            </textarea>
-                        </div>
-        
-                        <button type="submit" class="btn btn-success">Save</button>
-                        <a href="{% url 'doc-list' %}" class="btn btn-secondary ms-2">Cancel</a>
-                    </form>
+        <!-- Alert placeholder -->
+    <div class="alert"></div>
+
+    <div class="container py-5">
+        <div class="row">
+            <!-- Left: Document Editor -->
+            <div class="col-lg-9 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h3 class="card-title text-primary mb-4">Edit Document</h3>
+                        
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">Document Title</label>
+                                {{ form.title|add_class:"form-control" }}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="editor" class="form-label">Content</label>
+                                <textarea name="{{ form.text.name }}" id="editor">
+                                    {{ form.text.value|default:"" }}
+                                </textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-success">Save</button>
+                            <a href="{% url 'doc-list' %}" class="btn btn-secondary ms-2">Cancel</a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Active Users Panel -->
+            <div class="col-lg-3">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white">
+                        <strong>Active Users</strong>
+                    </div>
+                    <div class="card-body p-2">
+                        <ul id="active-users" class="list-group list-group-flush">
+                            <!-- Dynamic list populated via WebSocket -->
+                            <li class="list-group-item text-muted">Loading...</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+
 
         <script>
 
@@ -53,10 +76,26 @@
                 let isUpdatingFromSocket = false;
             
                 function updateConnectedUsersUI(users) {
-                    const userListDiv = document.getElementById("connected-users");
-                    if (userListDiv) {
-                        userListDiv.innerHTML = `<strong>Online Users:</strong> ${users.join(", ")}`;
+                    const userList = document.getElementById("active-users");
+                    userList.innerHTML = ""; // Clear existing list
+
+                    if (users.length === 0) {
+                        const li = document.createElement("li");
+                        li.className = "list-group-item text-muted";
+                        li.textContent = "No active users.";
+                        userList.appendChild(li);
+                        return;
                     }
+
+                    users.forEach(user => {
+                        const li = document.createElement("li");
+                        li.className = "list-group-item d-flex align-items-center";
+                        li.innerHTML = `
+                            <i class="bi bi-person-fill text-primary me-2"></i> 
+                            <span>${user}</span>
+                        `;
+                        userList.appendChild(li);
+                    });
                 }
             
                 function highlightCursorPosition(cursorData) {
