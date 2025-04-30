@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <script src= "https://code.jquery.com/jquery-3.5.1.min.js"></script>
 
+  <!-- sweet -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
 
   {% block style %}{% endblock style %}
 </head>
@@ -65,5 +69,14 @@
     {% endblock main %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      {% for message in messages %}
+            Swal.fire({
+                icon: "{{ message.tags }}",
+                title: "{{ message }}",
+                timer: 4000
+            });
+      {% endfor %}
+    </script>
 </body>
 </html>
