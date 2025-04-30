@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
     #external apps
     'django_ckeditor_5',
+    'widget_tweaks',
 
 ]
 

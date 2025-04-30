@@ -1,16 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create/Update Product</title>
-</head>
-<body>
-    <h1>{{ view.title }}</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        document title : {{ form.title }}
-        <button type="submit">Save</button>
-    </form>
-</body>
-</html>
+{% extends "partials/base.html" %}
+{% load widget_tweaks %}
+{% block main %}
+    <div class="container py-5">
+
+        <!-- Page Heading -->
+        <div class="mb-4">
+            <h1 class="text-primary">{{ view.title }}</h1>
+            <p class="text-muted">Set a title for your document to begin editing.</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Document Title -->
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold">Document Title</label>
+                        {{ form.title|add_class:"form-control" }}
+                        {% if form.title.errors %}
+                            <div class="text-danger mt-1 small">
+                                {{ form.title.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary">Save & Continue</button>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+{% endblock main %}

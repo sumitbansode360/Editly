@@ -1,6 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from documents.models import Notification
+import asyncio
 
 # Dictionary to track connected users per document
 connected_users = {}
@@ -11,7 +12,8 @@ class DocConsumer(AsyncWebsocketConsumer):
         self.document_id = self.scope['url_route']['kwargs']['document_id']
         self.room_group_name = f"doc_{self.document_id}"
         self.username = self.scope["user"].username if self.scope["user"].is_authenticated else "Anonymous"
-
+        self.is_editing = False
+        self.editing_reset_task = None
         # Initialize user tracking for this document
         if self.document_id not in connected_users:
             connected_users[self.document_id] = set()
@@ -84,13 +86,20 @@ class DocConsumer(AsyncWebsocketConsumer):
             )
 
             # Notify users that someone is editing
-            await self.channel_layer.group_send(
-                self.room_group_name, 
-                {
-                    "type": "send_notification",
-                    "message": f"{self.username} is editing!",
-                }
-            )
+            if not self.is_editing:
+                self.is_editing = True
+                await self.channel_layer.group_send(
+                    self.room_group_name, 
+                    {
+                        "type": "send_notification",
+                        "message": f"{self.username} is editing!",
+                    }
+                )
+            # Reset editing flag after 2 seconds of inactivity
+            if self.editing_reset_task:
+                self.editing_reset_task.cancel()
+
+            self.editing_reset_task = asyncio.create_task(self.reset_editing_flag())
 
             # Send cursor position update back to the sender
             if cursor_position is not None:
@@ -135,3 +144,10 @@ class DocConsumer(AsyncWebsocketConsumer):
     async def user_list_update(self, event):
         """Send the updated list of connected users to the WebSocket client."""
         await self.send(text_data=json.dumps({"connected_users": event["users"]}))
+   
+    async def reset_editing_flag(self):
+        try:
+            await asyncio.sleep(2)  # Wait for 2 seconds of inactivity
+            self.is_editing = False
+        except asyncio.CancelledError:
+            pass  # Ignore cancelled tasks (when typing continues)

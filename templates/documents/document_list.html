@@ -1,24 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>document page</h1>
+{% extends "partials/base.html" %}
+{% block main %}
+        <div class="container py-5">
+            <!-- Page Heading -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     
-    <form method="POST" action="{% url "logout" %}">
-        {% csrf_token %}
-        <button>Logout</button>
-    </form>
+                <!-- Title -->
+                <h2 class="fw-bold text-primary m-0">Your Documents</h2>
+                
+            </div>
+            
+        
+            <!-- Document Cards -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+              {% for document in documents %}
+                <!-- Single Document -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body position-relative">
+                      
+                      <!-- Delete icon (top-right corner) -->
+                      <a href="{% url 'doc-delete' document.uuid %}" class="text-danger position-absolute top-0 end-0 m-2" title="Delete">
+                        <i class="bi bi-trash-fill"></i>
+                      </a>
+                
+                      <h5 class="card-title">{{ document.title }}</h5>
+                      <p class="card-text text-muted">Created on: {{ document.created_at }}</p>
+                      <a href="{% url 'doc-edit' document.uuid %}" class="btn btn-sm btn-primary">View</a>
+                    </div>
+                  </div>
+                </div>
+              {% empty %}
+                <div class="col mx-2">
+                  <p class="text-muted">No documents found.</p>
+                </div>
+              {% endfor %}
 
-        {% for document in object_list %}
-        <div>
-            <a href="{% url "doc-edit" document.uuid %}">{{document.title}}</a>  &nbsp &nbsp  &nbsp&nbsp <a href="{% url "doc-delete" document.uuid %}"><button>delete</button></a>
- 
+            </div>
         </div>
-
-        {% endfor %}
-</body>
-</html> 
+{% endblock %}
