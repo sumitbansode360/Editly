@@ -1,17 +1,17 @@
 {% extends "partials/base.html" %}
 {% load widget_tweaks %}
 
-    {% block style %}
-        {{ form.media }} <!-- Ensure CKEditor 5 assets are included -->
-            <style>
-                .ck-marker {
-                    background-color: rgba(255, 0, 0, 0.3); /* Red transparent background */
-                    border-bottom: 2px solid red;
-                }        
-            </style>
-    {% endblock style %}
-        
-    {% block main %}
+{% block style %}
+    {{ form.media }} <!-- Ensure CKEditor 5 assets are included -->
+        <style>
+            .ck-marker {
+                background-color: rgba(255, 0, 0, 0.3); /* Red transparent background */
+                border-bottom: 2px solid red;
+            }        
+        </style>
+{% endblock style %}
+    
+{% block main %} 
         <!-- Alert placeholder -->
     <div class="alert"></div>
 
@@ -63,97 +63,98 @@
     </div>
 
 
-        <script>
+    <script>
+        const currentUser = "{{ request.user.username }}";
+        document.addEventListener("DOMContentLoaded", function () {
+            const docId = "{{ document.uuid }}";
+            console.log("📄 Document ID:", docId);
+        
+            const docSocket = new WebSocket(
+                `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/doc/edit/${docId}/`
+            );
+            let editorInstance;
+            let isUpdatingFromSocket = false;
+        
+            function updateConnectedUsersUI(users) {
+                const userList = document.getElementById("active-users");
+                userList.innerHTML = ""; // Clear existing list
 
-            document.addEventListener("DOMContentLoaded", function () {
-                const docId = "{{ document.uuid }}";
-                console.log("📄 Document ID:", docId);
+                if (users.length === 0) {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item text-muted";
+                    li.textContent = "No active users.";
+                    userList.appendChild(li);
+                    return;
+                }
+
+                users.forEach(user => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item d-flex align-items-center";
+                    li.innerHTML = `
+                        <i class="bi bi-person-fill text-primary me-2"></i> 
+                        <span>${user}</span>
+                    `;
+                    userList.appendChild(li);
+                });
+            }
+        
+            function highlightCursorPosition(cursorData) {
+                if (!editorInstance) return;
             
-                const docSocket = new WebSocket(
-                    `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/doc/edit/${docId}/`
+                const { username, position } = cursorData;
+                const range = editorInstance.model.createRange(
+                    editorInstance.model.createPositionFromPath(editorInstance.model.document.getRoot(), position)
                 );
-                let editorInstance;
-                let isUpdatingFromSocket = false;
             
-                function updateConnectedUsersUI(users) {
-                    const userList = document.getElementById("active-users");
-                    userList.innerHTML = ""; // Clear existing list
+                const markerName = `cursor_${username}`;
+                
+                // Remove existing marker if present
+                editorInstance.model.change(writer => {
+                    writer.removeMarker(markerName);
+                });
+            
+                // Add new marker for the updated cursor position
+                editorInstance.model.change(writer => {
+                    writer.addMarker(markerName, {
+                        range: range,
+                        usingOperation: false,
+                        affectsData: false
+                    });
+                });
 
-                    if (users.length === 0) {
-                        const li = document.createElement("li");
-                        li.className = "list-group-item text-muted";
-                        li.textContent = "No active users.";
-                        userList.appendChild(li);
-                        return;
+                editorInstance.conversion.for('editingDowncast').markerToHighlight({
+                    model: 'cursor_marker',
+                    view: {
+                        classes: 'ck-marker'
                     }
-
-                    users.forEach(user => {
-                        const li = document.createElement("li");
-                        li.className = "list-group-item d-flex align-items-center";
-                        li.innerHTML = `
-                            <i class="bi bi-person-fill text-primary me-2"></i> 
-                            <span>${user}</span>
-                        `;
-                        userList.appendChild(li);
-                    });
+                });
+                
+            
+                console.log(`📍 Cursor updated for ${username} at`, position);
+            }
+            
+            docSocket.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                
+                if (data.connected_users) {
+                    console.log("👥 Connected Users:", data.connected_users);
+                    updateConnectedUsersUI(data.connected_users);
                 }
-            
-                function highlightCursorPosition(cursorData) {
-                    if (!editorInstance) return;
-                
-                    const { username, position } = cursorData;
-                    const range = editorInstance.model.createRange(
-                        editorInstance.model.createPositionFromPath(editorInstance.model.document.getRoot(), position)
-                    );
-                
-                    const markerName = `cursor_${username}`;
-                    
-                    // Remove existing marker if present
-                    editorInstance.model.change(writer => {
-                        writer.removeMarker(markerName);
-                    });
-                
-                    // Add new marker for the updated cursor position
-                    editorInstance.model.change(writer => {
-                        writer.addMarker(markerName, {
-                            range: range,
-                            usingOperation: false,
-                            affectsData: false
-                        });
-                    });
-    
-                    editorInstance.conversion.for('editingDowncast').markerToHighlight({
-                        model: 'cursor_marker',
-                        view: {
-                            classes: 'ck-marker'
-                        }
-                    });
-                    
-                
-                    console.log(`📍 Cursor updated for ${username} at`, position);
+        
+                if (data.changes) {
+                    console.log("🔄 Receiving real-time update:", data.changes);
+                    isUpdatingFromSocket = true;
+                    if (editorInstance.getData() !== data.changes) {
+                        editorInstance.setData(data.changes);
+                    }
+                    setTimeout(() => { isUpdatingFromSocket = false; }, 100);
                 }
-                
-                docSocket.onmessage = function (e) {
-                    const data = JSON.parse(e.data);
-                    
-                    if (data.connected_users) {
-                        console.log("👥 Connected Users:", data.connected_users);
-                        updateConnectedUsersUI(data.connected_users);
-                    }
-            
-                    if (data.changes) {
-                        console.log("🔄 Receiving real-time update:", data.changes);
-                        isUpdatingFromSocket = true;
-                        if (editorInstance.getData() !== data.changes) {
-                            editorInstance.setData(data.changes);
-                        }
-                        setTimeout(() => { isUpdatingFromSocket = false; }, 100);
-                    }
-            
-                    if (data.cursor_position) {
-                        highlightCursorPosition(data.cursor_position);
-                    }
-                    if (data.notification) {
+        
+                if (data.cursor_position) {
+                    highlightCursorPosition(data.cursor_position);
+                }
+                if (data.notification) {
+                    if (data.username !== currentUser) {
                         const existingAlert = document.querySelector(".alert-info");
                         if (!existingAlert || existingAlert.innerText !== data.notification) {
                             const alert = document.querySelector(".alert");
@@ -166,70 +167,72 @@
                             }, 3000); // 3 seconds
                         }
                     }
+                    
+                }
 
-                };
-            
-                docSocket.onclose = function () {
-                    console.error('❌ Document socket closed unexpectedly');
-                };
-            
-                ClassicEditor.create(document.querySelector("#editor"), {
-                    toolbar: [
-                        'heading', '|', 'outdent', 'indent', '|', 'bold', 'italic', 'underline', 'strikethrough', 'code', 
-                        'subscript', 'superscript', 'highlight', '|', 'codeBlock', 'sourceEditing', 'insertImage', 
-                        'bulletedList', 'numberedList', 'todoList', '|', 'blockQuote', 'imageUpload', '|',
-                        'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'mediaEmbed', 'removeFormat', 'insertTable'
-                    ],
-                    image: {
-                        toolbar: [
-                            'imageTextAlternative', '|', 'imageStyle:alignLeft', 'imageStyle:alignRight', 'imageStyle:alignCenter', 'imageStyle:side'
-                        ]
-                    },
-                    table: {
-                        contentToolbar: [
-                            'tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties'
-                        ]
-                    },
-                    heading: {
-                        options: [
-                            { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                            { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                            { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
-                        ]
-                    }
-                })
-                .then(editor => {
-                    console.log("✅ CKEditor 5 Initialized");
-                    editorInstance = editor;
-            
-                    editor.model.document.on('change:data', () => {
-                        if (!isUpdatingFromSocket) {
-                            docSocket.send(JSON.stringify({ changes: editor.getData() }));
-                        }
-                    });
-            
-                    editor.editing.view.document.on('selectionChange', () => {
-                        const selection = editor.model.document.selection;
-                        const position = selection.getFirstPosition();  // Get cursor position
-                    
-                        if (position) {
-                            docSocket.send(JSON.stringify({
-                                cursor_position: {
-                                    username: "{{ request.user.username }}",  // Replace with actual username
-                                    position: position.path  // Send cursor path (array of indices)
-                                }
-                            }));
-                        }
-                    });
-                    
-                })
-                .catch(error => console.error("❌ CKEditor Initialization Error:", error));
-            });
-            
-        </script>
+            };
         
-    {% endblock main %}
+            docSocket.onclose = function () {
+                console.error('❌ Document socket closed unexpectedly');
+            };
+        
+            ClassicEditor.create(document.querySelector("#editor"), {
+                toolbar: [
+                    'heading', '|', 'outdent', 'indent', '|', 'bold', 'italic', 'underline', 'strikethrough', 'code', 
+                    'subscript', 'superscript', 'highlight', '|', 'codeBlock', 'sourceEditing', 'insertImage', 
+                    'bulletedList', 'numberedList', 'todoList', '|', 'blockQuote', 'imageUpload', '|',
+                    'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'mediaEmbed', 'removeFormat', 'insertTable'
+                ],
+                image: {
+                    toolbar: [
+                        'imageTextAlternative', '|', 'imageStyle:alignLeft', 'imageStyle:alignRight', 'imageStyle:alignCenter', 'imageStyle:side'
+                    ]
+                },
+                table: {
+                    contentToolbar: [
+                        'tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties'
+                    ]
+                },
+                heading: {
+                    options: [
+                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
+                    ]
+                }
+            })
+            .then(editor => {
+                console.log("✅ CKEditor 5 Initialized");
+                editorInstance = editor;
+        
+                editor.model.document.on('change:data', () => {
+                    if (!isUpdatingFromSocket) {
+                        docSocket.send(JSON.stringify({ changes: editor.getData() }));
+                    }
+                });
+        
+                editor.editing.view.document.on('selectionChange', () => {
+                    const selection = editor.model.document.selection;
+                    const position = selection.getFirstPosition();  // Get cursor position
+                
+                    if (position) {
+                        docSocket.send(JSON.stringify({
+                            cursor_position: {
+                                username: "{{ request.user.username }}",  // Replace with actual username
+                                position: position.path  // Send cursor path (array of indices)
+                            }
+                        }));
+                    }
+                });
+                
+            })
+            .catch(error => console.error("❌ CKEditor Initialization Error:", error));
+        });
+        
+    </script>
+    
+{% endblock main %}
     
 
    

@@ -33,6 +33,7 @@ class DocConsumer(AsyncWebsocketConsumer):
             self.room_group_name, 
             {
                 "type": "send_notification",
+                "username": self.username,
                 "message": f"{self.username} has joined the document!",
             }
         )
@@ -51,6 +52,7 @@ class DocConsumer(AsyncWebsocketConsumer):
             self.room_group_name, 
             {
                 "type": "send_notification",
+                "username": self.username,
                 "message": f"{self.username} has left the document!",
             }
         )
@@ -92,6 +94,7 @@ class DocConsumer(AsyncWebsocketConsumer):
                     self.room_group_name, 
                     {
                         "type": "send_notification",
+                        "username": self.username,
                         "message": f"{self.username} is editing!",
                     }
                 )
@@ -126,7 +129,7 @@ class DocConsumer(AsyncWebsocketConsumer):
         text_data=json.dumps({"notification": event["message"]})
         print(text_data)
         
-        await self.send(text_data=json.dumps({"notification": event["message"]}))
+        await self.send(text_data=json.dumps({"notification": event["message"], "username": event["username"]}))
 
     async def send_connected_users(self):
         """Broadcast the list of connected users to all clients in the document room."""

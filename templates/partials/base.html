@@ -40,10 +40,20 @@
               </button>
       
               <!-- Logout Form -->
-              <form method="POST" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button class="btn btn-outline-danger" type="submit">Logout</button>
-              </form>
+              <!-- User Dropdown -->
+              <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  👋 Welcome, {{ request.user.username }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <li>
+                    <form method="POST" action="{% url 'logout' %}" class="dropdown-item m-0 p-0">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item text-danger">Logout</button>
+                    </form>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
