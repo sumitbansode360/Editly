@@ -6,6 +6,18 @@ This project focuses on real-time communication, backend-heavy architecture, and
 
 ---
 
+## 🔑 Demo Login Credentials
+
+To make evaluation easier, test credentials are provided below.
+
+### 👤 Demo User Account 1
+- **Username:** testuser1
+- **Password:** test@123
+
+### 👤 Demo User Account 2
+- **Username:** testuser2
+- **Password:** test@123
+
 ## 🚀 Features
 
 ### 🔐 User Authentication
