@@ -62,7 +62,7 @@ To make evaluation easier, test credentials are provided below.
 - JavaScript  
 
 ### Other
-- Redis (for Channels layer, if used)  
+- Redis (for Channels layer)  
 - Django Auth System  
 
 ---
